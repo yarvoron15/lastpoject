@@ -91,7 +91,3 @@ def register_profile_handlers(dp: Dispatcher):
         my_profile_call,
         lambda call: call.data == "my_profile"
     )
-    dp.register_callback_query_handler(
-        detect_like_call,
-        lambda call: "dis" in call.data
-    )

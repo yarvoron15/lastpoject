@@ -13,8 +13,6 @@ class RegistrationStates(StatesGroup):
     biography = State()
     age = State()
     married = State()
-    location = State()
-    hobby = State()
     gender = State()
     photo = State()
 
@@ -93,34 +91,6 @@ async def load_married(message: types.Message,
 
     await bot.send_message(
         chat_id=message.from_user.id,
-        text='Share with me ur location\n'
-
-    )
-    await RegistrationStates.next()
-
-
-async def load_location(message: types.Message,
-                       state: FSMContext):
-    async with state.proxy() as data:
-        data['married'] = message.text
-        print(data)
-
-    await bot.send_message(
-        chat_id=message.from_user.id,
-        text='Share with me ur hobbies?\n'
-             'if u dont have any hobbies, please send me - '
-    )
-    await RegistrationStates.next()
-
-
-async def load_hobby(message: types.Message,
-                       state: FSMContext):
-    async with state.proxy() as data:
-        data['hobby'] = message.text
-        print(data)
-
-    await bot.send_message(
-        chat_id=message.from_user.id,
         text='Share with me ur gender?\n'
              'if u dont wanna reveal ur gender, please send me - '
     )
@@ -159,8 +129,6 @@ async def load_photo(message: types.Message,
                 bio=data['bio'],
                 age=data['age'],
                 married=data['married'],
-                location=data['location'],
-                hobby=data['hobby'],
                 gender=data['gender'],
                 photo=path.name
             )
@@ -170,12 +138,11 @@ async def load_photo(message: types.Message,
                 bio=data['bio'],
                 age=data['age'],
                 married=data['married'],
-                location=data['location'],
-                hobby=data['hobby'],
                 gender=data['gender'],
                 photo=path.name,
                 tg_id=message.from_user.id,
             )
+
         with open(path.name, 'rb') as photo:
             await bot.send_photo(
                 chat_id=message.from_user.id,
@@ -185,8 +152,6 @@ async def load_photo(message: types.Message,
                     bio=data['bio'],
                     age=data['age'],
                     married=data['married'],
-                    location=data['location'],
-                    hobby=data['hobby'],
                     gender=data['gender']
                 )
             )
@@ -221,16 +186,6 @@ def register_registration_handlers(dp: Dispatcher):
     dp.register_message_handler(
         load_married,
         state=RegistrationStates.married,
-        content_types=['text']
-    )
-    dp.register_message_handler(
-        load_location,
-        state=RegistrationStates.location,
-        content_types=['text']
-    )
-    dp.register_message_handler(
-        load_hobby,
-        state=RegistrationStates.hobby,
         content_types=['text']
     )
     dp.register_message_handler(
