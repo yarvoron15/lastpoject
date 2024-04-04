@@ -1,93 +1,59 @@
-import re
+import sqlite3
+from random import choice
 
 from aiogram import types, Dispatcher
 
-import const
 from config import bot
-from keyboards.profile import profile_keyboard, my_profile_keyboard
-from database.bot_db import Database
-import random
+from const import Userinfo
+from database import db
+from buttons import inlinebuttons
 
 
-async def my_profile_call(call: types.CallbackQuery):
-    db = Database()
-    profile = db.select_profile(tg_id=call.from_user.id)
-
-    if profile:
-        with open(profile['photo'], 'rb') as photo:
+async def view_random_profile(call: types.CallbackQuery):
+    data = db.Database()
+    prof = data.select_all_registr(tg_id=call.from_user.id)
+    if prof:
+        rand = choice(prof)[:9]
+        with open(rand[-1], 'rb') as photo:
             await bot.send_photo(
                 chat_id=call.from_user.id,
                 photo=photo,
-                caption=const.PROFILE_TEXT.format(
-                    nickname=profile['nickname'],
-                    bio=profile['bio'],
-                    age=profile['age'],
-                    married=profile['married'],
-                    gender=profile['gender']
+                caption=Userinfo.format(
+                    name=rand[2],
+                    bio=rand[3],
+                    age=rand[4],
+                    z=rand[5],
+                    gender=rand[6],
+                    bestcolor=rand[7]
                 ),
-                reply_markup=await my_profile_keyboard()
+                reply_markup=await inlinebuttons.like_dislike(rand[1])
             )
     else:
         await bot.send_message(
-            chat_id=call.from_user.id,
-            text="U have not registered, please register to view ur profile"
+            chat_id=call.from_user.id, text='Nobody left'
         )
 
 
-async def random_profile_call(call: types.CallbackQuery):
-    if call.message.caption.startswith("Nickname"):
+async def like_dislike_management(call: types.CallbackQuery):
+    data = db.Database()
+    calldata = call.data.split("_")
+    try:
+        data.insert_like_dislike_table(
+            user=calldata[1],
+            liker=call.from_user.id,
+            what=calldata[0]
+        )
+    except sqlite3.IntegrityError:
+        await bot.send_message(
+            chat_id=call.from_user.id,
+            text="U have already valued this profile"
+        )
+    finally:
         await call.message.delete()
-    db = Database()
-    profiles = db.select_all_profiles(
-        tg_id=call.from_user.id
-    )
-    print(profiles)
-    if profiles:
-        random_profile = random.choice(profiles)
-
-        with open(random_profile['photo'], 'rb') as photo:
-            await bot.send_photo(
-                chat_id=call.from_user.id,
-                photo=photo,
-                caption=const.PROFILE_TEXT.format(
-                    nickname=random_profile['nickname'],
-                    bio=random_profile['bio'],
-                    age=random_profile['age'],
-                    married=random_profile['married'],
-                    gender=random_profile['gender']
-                ),
-                reply_markup=await profile_keyboard(tg_id=random_profile['telegram_id'])
-            )
-    else:
-        await bot.send_message(
-            chat_id=call.from_user.id,
-            text="U have liked all profiles, come later"
-        )
+        await view_random_profile(call=call)
 
 
-async def detect_like_call(call: types.CallbackQuery):
-    # print(call.data[5:])
-    # print(call.data.replace("like_", ""))
-    owner = re.sub("like_", "", call.data)
-    db = Database()
-
-    db.insert_like_profile(
-        owner=owner,
-        liker=call.from_user.id
-    )
-    await random_profile_call(call=call)
-
-
-def register_profile_handlers(dp: Dispatcher):
-    dp.register_callback_query_handler(
-        random_profile_call,
-        lambda call: call.data == "random_profile"
-    )
-    dp.register_callback_query_handler(
-        detect_like_call,
-        lambda call: "like_" in call.data
-    )
-    dp.register_callback_query_handler(
-        my_profile_call,
-        lambda call: call.data == "my_profile"
-    )
+def registr_edit_profile(dp: Dispatcher):
+    dp.register_callback_query_handler(view_random_profile, lambda call: call.data == 'view')
+    dp.register_callback_query_handler(like_dislike_management, lambda call: 'Like' in call.data)
+    dp.register_callback_query_handler(like_dislike_management, lambda call: 'Dis' in call.data)

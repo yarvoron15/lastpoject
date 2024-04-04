@@ -1,140 +1,135 @@
-CREATE_USER_TABLE_QUERY = """
-CREATE TABLE IF NOT EXISTS telegram_users
+CREATE_TG_USER_TABLE = """CREATE TABLE IF NOT EXISTS telegram_users(
+id INTEGER PRIMARY KEY,
+telegram_user_id INTEGER,
+first_name CHAR(20),
+UNIQUE (telegram_user_id))"""
+
+INSERT_TG_USER_TABLE = """INSERT OR IGNORE INTO telegram_users VALUES (?,?,?,?,?)"""
+
+CREATE_BAN_TABLE = '''
+CREATE TABLE IF NOT EXISTS bans(
+id INTEGER PRIMARY KEY,
+tg_id INTEGER,
+first_name CHAR(20),
+countt INTEGER,
+UNIQUE(tg_id)
+)'''
+INSERT_BAN_TABLE = '''
+INSERT OR IGNORE INTO bans  VALUES (?,?,?,?)
+'''
+
+SELECT_COUNT_BAN_TABLE = '''
+SELECT countt FROM bans WHERE tg_id=?
+'''
+UPDATE_COUNT_BAN_TABLE = '''
+UPDATE bans SET countt=countt+1 WHERE tg_id=?
+'''
+
+DELETE_USER = '''
+DELETE FROM bans WHERE tg_id=?
+'''
+
+SELECT_USER_FROM_BAN = '''
+SELECT tg_id,first_name,countt FROM bans'''
+
+CREATE_REGISTER_TABLE = '''
+CREATE TABLE IF NOT EXISTS registers(
+id INTEGER PRIMARY KEY,
+tg_id INTEGER,
+nickname CHAR(20),
+biography TEXT,
+age INTEGER,
+zodiac CHAR(20),
+gender CHAR(20),
+best_color CHAR(20),
+photo TEXT,
+UNIQUE (tg_id)
+)
+'''
+
+INSERT_REGISTER_TABLE = '''
+INSERT OR IGNORE INTO registers VALUES (?,?,?,?,?,?,?,?,?)'''
+
+SELECT_TG_ID_REGISTER_TABLE = '''
+SELECT tg_id FROM registers WHERE tg_id=?'''
+
+SELECT_INFO_REGISTER_TABLE = '''
+SELECT tg_id,nickname,biography,age,zodiac,gender,best_color,photo FROM registers WHERE tg_id=?'''
+
+SELECT_ALL_INFO_REGISTER_TABLE = '''
+SELECT * FROM registers'''
+
+CREATE_LIKE_DISLIKE_TABLE = '''
+CREATE TABLE IF NOT EXISTS like_dislike(
+ID INTEGER PRIMARY KEY,
+user_tg_id INTEGER,
+liker_tg_id INTEGER,
+like_dislike CHAR(20),
+UNIQUE (user_tg_id, liker_tg_id)
+)'''
+INSERT_LIKE_DISLIKE_TABLE = '''
+INSERT INTO like_dislike VALUES (?,?,?,?)'''
+
+FILTER_LEFT_JOIN = '''
+SELECT * FROM registers
+LEFT JOIN like_dislike ON registers.tg_id = like_dislike.user_tg_id
+AND like_dislike.liker_tg_id = ?
+WHERE like_dislike.ID IS NULL
+AND registers.tg_id != ?'''
+
+CREATE_REFERRAL_TABLE = """
+CREATE TABLE IF NOT EXISTS referral
 (
 ID INTEGER PRIMARY KEY,
-TELEGRAM_ID INTEGER,
-USERNAME CHAR(50),
-FIRST_NAME CHAR(50),
-LAST_NAME CHAR(50),
-UNIQUE (TELEGRAM_ID)
+OWNER_TG_ID INTEGER,
+REFERRAL_TG_ID INTEGER,
+UNIQUE (OWNER_TG_ID, REFERRAL_TG_ID)
 )
 """
 
-INSERT_USER_QUERY = """
-INSERT OR IGNORE INTO telegram_users VALUES(?,?,?,?,?,?,?)
-"""
-
-CREATE_BAN_USER_TABLE_QUERY = """
-CREATE TABLE IF NOT EXISTS ban_user
-(
-ID INTEGER PRIMARY KEY,
-TELEGRAM_ID INTEGER,
-BAN_COUNT INTEGER,
-UNIQUE (TELEGRAM_ID)
-)
-"""
-
-INSERT_BAN_USER_QUERY = """
-INSERT INTO ban_user VALUES(?,?,?)
-"""
-
-SELECT_BAN_USER_QUERY = """
-SELECT * FROM ban_user WHERE TELEGRAM_ID = ?
-"""
-
-UPDATE_BAN_COUNT_QUERY = """
-UPDATE ban_user SET BAN_COUNT = BAN_COUNT + 1 WHERE TELEGRAM_ID = ?
-"""
-
-CREATE_PROFILE_TABLE_QUERY = """
-CREATE TABLE IF NOT EXISTS profile
-(
-ID INTEGER PRIMARY KEY,
-TELEGRAM_ID INTEGER,
-NICKNAME CHAR(50),
-BIO TEXT,
-AGE INTEGER,
-MARRIED CHAR(10),
-GENDER CHAR(40),
-PHOTO TEXT,
-UNIQUE (TELEGRAM_ID)
-)
-"""
-
-INSERT_PROFILE_QUERY = """
-INSERT INTO profile VALUES(?,?,?,?,?,?,?,?)
-"""
-
-SELECT_PROFILES_QUERY = """
-SELECT * FROM profile
-"""
-
-CREATE_LIKE_TABLE_QUERY = """
-CREATE TABLE IF NOT EXISTS like_profile
-(
-ID INTEGER PRIMARY KEY,
-OWNER_TELEGRAM_ID INTEGER,
-LIKER_TELEGRAM_ID INTEGER,
-UNIQUE(OWNER_TELEGRAM_ID, LIKER_TELEGRAM_ID)
-)
-"""
-
-INSERT_LIKE_QUERY = """
-INSERT INTO like_profile VALUES (?,?,?)
-"""
-
-SELECT_LEFT_JOIN_PROFILE_QUERY = """
-SELECT * FROM profile
-LEFT JOIN like_profile ON profile.TELEGRAM_ID = like_profile.OWNER_TELEGRAM_ID
-AND like_profile.LIKER_TELEGRAM_ID = ?
-WHERE like_profile.ID IS NULL
-AND profile.TELEGRAM_ID != ?
-"""
-
-SELECT_PROFILE_QUERY = """
-SELECT * FROM profile WHERE TELEGRAM_ID = ?
-"""
-
-UPDATE_PROFILE_QUERY = """
-UPDATE profile SET NICKNAME = ?, BIO = ?, AGE = ?, MARRIED = ?, GENDER = ?, PHOTO = ? WHERE TELEGRAM_ID = ?
-"""
-
-ALTER_TABLE_USER_QUERY = """
-ALTER TABLE telegram_users ADD COLUMN REFERENCE_LINK TEXT
-"""
-
-ALTER_TABLE_USER_V2_QUERY = """
-ALTER TABLE telegram_users ADD COLUMN BALANCE INTEGER
-"""
-
-UPDATE_USER_LINK_QUERY = """
-UPDATE telegram_users SET REFERENCE_LINK = ? WHERE TELEGRAM_ID = ?
-"""
-
-SELECT_USER_QUERY = """
-SELECT * FROM telegram_users WHERE TELEGRAM_ID = ?
-"""
-
-SELECT_USER_BY_LINK_QUERY = """
-SELECT * FROM telegram_users WHERE REFERENCE_LINK = ?
-"""
-
-CREATE_REFERENCE_TABLE_QUERY = """
-CREATE TABLE IF NOT EXISTS reference
-(
-ID INTEGER PRIMARY KEY,
-OWNER_TELEGRAM_ID INTEGER,
-REFERENCE_TELEGRAM_ID INTEGER,
-UNIQUE(OWNER_TELEGRAM_ID, REFERENCE_TELEGRAM_ID)
-)
-"""
-
-UPDATE_USER_BALANCE_QUERY = """
-UPDATE telegram_users SET BALANCE = COALESCE(BALANCE, 0) + 100 WHERE TELEGRAM_ID = ?
-"""
-
-INSERT_REFERENCE_QUERY = """
-INSERT INTO reference VALUES (?,?,?)
-"""
-
-SELECT_REFERENCE_USER_INFO_QUERY = """
+DOUBLE_SELECT_REFERRAL_USER_QUERY = """
 SELECT
-    COALESCE(telegram_users.BALANCE, 0),
-    COUNT(reference.ID)
+    COALESCE(telegram_users.BALANCE, 0) as BALANCE,
+    COUNT(referral.ID) as total_referrals
 FROM
     telegram_users
 LEFT JOIN
-    reference on telegram_users.TELEGRAM_ID = reference.OWNER_TELEGRAM_ID
+    referral ON telegram_users.telegram_user_id = referral.OWNER_TG_ID
 WHERE
-    telegram_users.TELEGRAM_ID = ?
+    telegram_users.telegram_user_id = ?
+"""
+
+SELECT_ALL_USER_TL_USERS = '''
+SELECT * FROM telegram_users WHERE telegram_user_id=?'''
+
+UPDATE_USER_TL_USERS_LINK = '''UPDATE telegram_users SET REFERENCE_LINK=? WHERE telegram_user_id=?'''
+
+SELECT_BY_LINK_TG_USERS = '''SELECT * FROM telegram_users WHERE REFERENCE_LINK=?'''
+
+INSERT_REFERRAL_TABLE = '''
+INSERT INTO referral VALUES (?,?,?)'''
+
+UPDATE_USER_TL_USERS_BALANCE = '''UPDATE telegram_users SET BALANCE=COALESCE(BALANCE,0)+100 WHERE telegram_user_id=?'''
+
+SELECT_TG_ID_USER_TABLE = '''
+SELECT telegram_user_id FROM telegram_users WHERE telegram_user_id=?'''
+
+SELECT_REFERRALS_REFERRAL_TABLE = '''
+SELECT REFERRAL_TG_ID FROM referral WHERE OWNER_TG_ID=?'''
+
+SELECT_BALANCE_TL_USERS = '''
+SELECT COALESCE(BALANCE,0) FROM telegram_users WHERE telegram_user_id=?'''
+
+CREATE_SCRAP_TABLE = '''CREATE TABLE IF NOT EXISTS scrap(
+id INTEGER PRIMARY KEY,
+link TEXT,
+UNIQUE(link))'''
+
+INSERT_SCRAP_TABLE = '''INSERT OR IGNORE INTO scrap VALUES (?,?)'''
+ALTER_R_USER_TABLE = """
+ALTER TABLE telegram_users ADD COLUMN REFERENCE_LINK TEXT
+"""
+
+ALTER_B_USER_TABLE = """
+ALTER TABLE telegram_users ADD COLUMN BALANCE INTEGER
 """

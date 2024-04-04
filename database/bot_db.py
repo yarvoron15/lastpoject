@@ -1,172 +1,115 @@
 import sqlite3
-from database import sql_queries
+from database import query
 
 
-class Database:
+class Database():
     def __init__(self):
-        self.connection = sqlite3.connect("db.sqlite3")
+        self.connection = sqlite3.connect('tg_bot.db')
         self.cursor = self.connection.cursor()
 
-    def sql_create_tables(self):
+    def creat_table(self):
         if self.connection:
-            print("Database connected successfully")
-
-        self.connection.execute(sql_queries.CREATE_USER_TABLE_QUERY)
-        self.connection.execute(sql_queries.CREATE_BAN_USER_TABLE_QUERY)
-        self.connection.execute(sql_queries.CREATE_PROFILE_TABLE_QUERY)
-        self.connection.execute(sql_queries.CREATE_LIKE_TABLE_QUERY)
-        self.connection.execute(sql_queries.CREATE_REFERENCE_TABLE_QUERY)
-
+            print('Connection established')
+        self.connection.execute(query.CREATE_TG_USER_TABLE)
+        self.connection.execute(query.CREATE_BAN_TABLE)
+        self.connection.execute(query.CREATE_REGISTER_TABLE)
+        self.connection.execute(query.CREATE_LIKE_DISLIKE_TABLE)
+        self.connection.execute(query.CREATE_REFERRAL_TABLE)
         try:
-            self.connection.execute(sql_queries.ALTER_TABLE_USER_QUERY)
-            self.connection.execute(sql_queries.ALTER_TABLE_USER_V2_QUERY)
+            self.connection.execute(query.ALTER_R_USER_TABLE)
+            self.connection.execute(query.ALTER_B_USER_TABLE)
         except sqlite3.OperationalError:
             pass
-
+        self.connection.execute(query.CREATE_SCRAP_TABLE)
         self.connection.commit()
 
-    def sql_insert_user(self, tg_id, username, first_name, last_name):
-        self.cursor.execute(
-            sql_queries.INSERT_USER_QUERY,
-            (None, tg_id, username, first_name, last_name, None, 0)
-        )
+    def insert_user(self, tg_user_id, tg_username):
+        self.cursor.execute(query.INSERT_TG_USER_TABLE, (None, tg_user_id, tg_username, None, 0))
         self.connection.commit()
 
-    def select_ban_user(self, tg_id):
-        self.cursor.row_factory = lambda cursor, row: {
-            "id": row[0],
-            "telegram_id": row[1],
-            "count": row[2]
-        }
-        return self.cursor.execute(
-            sql_queries.SELECT_BAN_USER_QUERY,
-            (tg_id,)
-        ).fetchone()
-
-    def insert_ban_user(self, tg_id):
-        self.cursor.execute(
-            sql_queries.INSERT_BAN_USER_QUERY,
-            (None, tg_id, 1)
-        )
+    def insert_ban(self, tg_id, first_name):
+        self.cursor.execute(query.INSERT_BAN_TABLE, (None, tg_id, first_name, 0))
         self.connection.commit()
 
-    def update_ban_count(self, tg_id):
-        self.cursor.execute(
-            sql_queries.UPDATE_BAN_COUNT_QUERY,
-            (tg_id,)
-        )
+    def select_count_bun_table(self, tg_id):
+        self.cursor.execute(query.SELECT_COUNT_BAN_TABLE, (tg_id,))
+        return self.cursor.fetchone()
+
+    def update_count_bun_table(self, tg_id):
+        self.cursor.execute(query.UPDATE_COUNT_BAN_TABLE, (tg_id,))
         self.connection.commit()
 
-    def insert_profile(self, tg_id, nickname, bio, age, married, gender, photo):
-        self.cursor.execute(
-            sql_queries.INSERT_PROFILE_QUERY,
-            (None, tg_id, nickname, bio, age, married, gender, photo)
-        )
+    def delete_user(self, tg_id):
+        self.cursor.execute(query.DELETE_USER, (tg_id,))
         self.connection.commit()
 
-    def select_all_profiles(self, tg_id):
-        self.cursor.row_factory = lambda cursor, row: {
-            "id": row[0],
-            "telegram_id": row[1],
-            "nickname": row[2],
-            "bio": row[3],
-            "age": row[4],
-            "married": row[5],
-            "gender": row[6],
-            "photo": row[7],
-        }
-        return self.cursor.execute(
-            sql_queries.SELECT_LEFT_JOIN_PROFILE_QUERY,
-            (tg_id, tg_id,)
-        ).fetchall()
-
-    def insert_like_profile(self, owner, liker):
-        self.cursor.execute(
-            sql_queries.INSERT_LIKE_QUERY,
-            (None, owner, liker,)
-        )
+    def select_from_ban(self):
+        self.cursor.execute(query.SELECT_USER_FROM_BAN)
+        rows = self.cursor.fetchall()
+        return rows
+    def insert_info(self, tg, name, bio, age, zodiac, gender, color, photo):
+        self.cursor.execute(query.INSERT_REGISTER_TABLE, (None, tg, name, bio, age, zodiac, gender, color, photo))
         self.connection.commit()
 
-    def select_profile(self, tg_id):
-        self.cursor.row_factory = lambda cursor, row: {
-            "id": row[0],
-            "telegram_id": row[1],
-            "nickname": row[2],
-            "bio": row[3],
-            "age": row[4],
-            "married": row[5],
-            "gender": row[6],
-            "photo": row[7],
-        }
-        return self.cursor.execute(
-            sql_queries.SELECT_PROFILE_QUERY,
-            (tg_id,)
-        ).fetchone()
+    def select_id_info(self, tg):
+        self.cursor.execute(query.SELECT_TG_ID_REGISTER_TABLE, (tg,))
+        rows = self.cursor.fetchone()
+        return rows
 
-    def update_profile(self, nickname, bio, age, married, gender, photo, tg_id):
-        self.cursor.execute(
-            sql_queries.UPDATE_PROFILE_QUERY,
-            (nickname, bio, age, married, gender, photo, tg_id,)
-        )
+    def select_info_register_table(self, tg_id):
+        self.cursor.execute(query.SELECT_INFO_REGISTER_TABLE, (tg_id,))
+        row = self.cursor.fetchone()
+        return row
+    def insert_like_dislike_table(self, user, liker, what):
+        self.cursor.execute(query.INSERT_LIKE_DISLIKE_TABLE, (None, user, liker, what))
         self.connection.commit()
 
-    def update_user_link(self, link, tg_id):
-        self.cursor.execute(
-            sql_queries.UPDATE_USER_LINK_QUERY,
-            (link, tg_id,)
-        )
+    def select_all_registr(self, tg_id):
+        self.cursor.execute(query.FILTER_LEFT_JOIN, (tg_id, tg_id))
+        rows = self.cursor.fetchall()
+        return rows
+    def select_balance_totalreferral_table(self, tg_id):
+        self.cursor.execute(query.DOUBLE_SELECT_REFERRAL_USER_QUERY, (tg_id,))
+        row = self.cursor.fetchone()
+        return row
+
+    def select_all_from_tl_users(self, tg_id):
+        self.cursor.execute(query.SELECT_ALL_USER_TL_USERS, (tg_id,))
+        row = self.cursor.fetchone()
+        return row
+
+    def update_tg_user_link(self, link, tg_id):
+        self.cursor.execute(query.UPDATE_USER_TL_USERS_LINK, (link, tg_id))
         self.connection.commit()
 
-    def select_user(self, tg_id):
-        self.cursor.row_factory = lambda cursor, row: {
-            "id": row[0],
-            "telegram_id": row[1],
-            "username": row[2],
-            "first_name": row[3],
-            "last_name": row[4],
-            "link": row[5],
-            "balance": row[6],
-        }
-        return self.cursor.execute(
-            sql_queries.SELECT_USER_QUERY,
-            (tg_id,)
-        ).fetchone()
+    def select_all_from_tl_users_by_link(self, link):
+        self.cursor.execute(query.SELECT_BY_LINK_TG_USERS, (link,))
+        row = self.cursor.fetchone()
+        return row
 
-    def select_user_by_link(self, link):
-        self.cursor.row_factory = lambda cursor, row: {
-            "id": row[0],
-            "telegram_id": row[1],
-            "username": row[2],
-            "first_name": row[3],
-            "last_name": row[4],
-            "link": row[5],
-            "balance": row[6],
-        }
-        return self.cursor.execute(
-            sql_queries.SELECT_USER_BY_LINK_QUERY,
-            (link,)
-        ).fetchone()
-
-    def update_owner_balance(self, tg_id):
-        self.cursor.execute(
-            sql_queries.UPDATE_USER_BALANCE_QUERY,
-            (tg_id,)
-        )
+    def insert_referral_table(self, owner, referral):
+        self.cursor.execute(query.INSERT_REFERRAL_TABLE, (None, owner, referral))
         self.connection.commit()
 
-    def insert_reference_user(self, owner, reference):
-        self.cursor.execute(
-            sql_queries.INSERT_REFERENCE_QUERY,
-            (None, owner, reference,)
-        )
+    def update_tg_user_balance(self, tg_id):
+        self.cursor.execute(query.UPDATE_USER_TL_USERS_BALANCE, (tg_id,))
         self.connection.commit()
 
-    def select_reference_user_info(self, tg_id):
-        self.cursor.row_factory = lambda cursor, row: {
-            "balance": row[0],
-            "count": row[1]
-        }
-        return self.cursor.execute(
-            sql_queries.SELECT_REFERENCE_USER_INFO_QUERY,
-            (tg_id,)
-        ).fetchone()
+    def select_tg_id_user_table(self, tg_id):
+        self.cursor.execute(query.SELECT_TG_ID_USER_TABLE, (tg_id,))
+        row = self.cursor.fetchone()
+        return row
+
+    def select_referrals_referral_table(self, tg_id):
+        self.cursor.execute(query.SELECT_REFERRALS_REFERRAL_TABLE, (tg_id,))
+        row = self.cursor.fetchall()
+        return row
+
+    def select_balance(self, tg):
+        self.cursor.execute(query.SELECT_BALANCE_TL_USERS, (tg,))
+        row = self.cursor.fetchone()
+        return row
+
+    def insert_scrap_table(self, link):
+        self.cursor.execute(query.INSERT_SCRAP_TABLE, (None, link))
+        self.connection.commit()
